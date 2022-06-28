@@ -1,7 +1,13 @@
 /// <reference types="cypress" />
 
+import {
+  queryPvzQuoteByTypeStockAvailable,
+  variablesPvzQuoteByTypeStockAvailable
+} from "../../support/api/graphql/pvzQuoteByTypeStockAvailable";
+
 describe('Checkout Samovivoz', () => {
 
+  const _url = 'https://www.dev-rigla.ru/graphql';
   let quoteId = null;
   let pvz_id = null;
 
@@ -27,15 +33,64 @@ describe('Checkout Samovivoz', () => {
       method: 'POST',
       url: 'https://dev-rigla.ru/rest/V1/guest-carts/' + quoteId + '/items',
       body: {
-        cartItem: {quote_id: quoteId, sku: "110057", qty: 1},
+        cartItem: {quote_id: quoteId, sku: "307", qty: 1},
+      },
+    })
+  })
+
+  it('Получаем адреса в соответствии с текущим сгенерированным идентификатором пользователя', () => {
+    cy.request({
+      method: 'POST',
+      url: _url,
+      body: {
+        variables: variablesPvzQuoteByTypeStockAvailable,
+        query: queryPvzQuoteByTypeStockAvailable
+      },
+    }).then(request => {
+      pvz_id = request.body.data.pvzQuoteByTypeStockAvailable.inStockPvz[0].entity_id;
+      cy.log('данные', request.body)
+    })
+  })
+
+  it('Метод доставки', () => {
+    cy.request({
+      method: 'PUT',
+      url: 'https://www.dev-rigla.ru/rest/V1/myshipping/updateCartZone/' + quoteId,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer tcf5k9a8u7gfyr22c28qu29qq4qhxbu6",
+        "X-APP": "WEB"
+      },
+      body: {
+        zoneId: 3
+      },
+    })
+  })
+
+  it('Рассчет заказа', () => {
+    cy.request({
+      method: 'POST',
+      url: 'https://dev-rigla.ru/rest/V1/cart/'+ quoteId +'/calculate-checkout',
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer tcf5k9a8u7gfyr22c28qu29qq4qhxbu6",
+        "X-APP": "WEB"
+      },
+      body: {
+        params: {
+          estimate_day: 0,
+          is_take_all: true,
+          pvz_id: null,
+          shipping_method: "courier",
+          address: 'Москва, Казанский 123',
+          latitude: 55.73183,
+          longitude: 37.614788
+        },
       },
     })
   })
 
   it('Размещение заказа', () => {
-    cy.clearCookie('quoteId')
-    cy.setCookie('quoteId', quoteId)
-
     cy.request({
       method: 'PUT',
         url: 'https://dev-rigla.ru/rest/V1/cart/' + quoteId + '/place-order',
@@ -45,45 +100,45 @@ describe('Checkout Samovivoz', () => {
       },
       body: {
         order: {
-          additional_data: "/checkout-new",
-          app_point: "rigla.ru",
+          app_point: 'rigla.ru',
+          additional_data: '/checkout-new',
+          comment: '',
           customer: {
-            apt: "32",
-            city: "Москва",
-            email: "alexobukhovarn1o@gmail.com",
-            firstname: "AKEKSANDR",
-            house: "123",
-            lastname: "OBUKHOV",
-            middlename: "",
-            postcode: "111111",
+            firstname: 'AKEKSANDR',
+            lastname: 'OBUKHOV',
+            middlename: '',
+            email: 'alexobukh2ovarno@gmail.com',
+            telephone: '+7 (891) 521-27-72',
+            city: 'Москва',
+            postcode: '111111',
             region_code: 77,
-            street: "Казанский",
-            telephone: "+7 (891) 521-27-72"
+            street: 'Казанский',
+            house: '123',
+            apt: '32'
           },
-          comment: "Заказ Здравсити срочная доставка. Заказ собрать из остатков аптеки",
           subscribe: {
             checkout_subscribe: false
           },
           shipment: {
-            delivery_interval: "13:00 - 18:00",
-            shipping_carrier_code: "myshipping",
-            shipping_date: "2022-06-28",
-            shipping_method_code: "",
-            additional_data:{
+            shipping_method_code: '',
+            delivery_interval: '09:00 - 21:00',
+            shipping_carrier_code: 'myshipping',
+            shipping_date: '2022-07-04',
+            additional_data: {
               latitude: 55.73183,
               longitude: 37.614788
-            },
+            }
           },
           payment: {
             paymentMethod: {
-              method: "checkmo ",
+              method: 'checkmo',
               additional_data: {
-                "only_in_stock": true
-              },
+                only_in_stock: true
+              }
             }
           }
         }
-      },
+      }
     })
   })
 })
