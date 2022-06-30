@@ -1,27 +1,16 @@
 /// <reference types="cypress" />
 
-import {
-  queryPvzQuoteByTypeStockAvailable,
-  variablesPvzQuoteByTypeStockAvailable
-} from "../../support/api/graphql/pvzQuoteByTypeStockAvailable";
+describe('Checkout Dostavka', () => {
 
-describe('Checkout Samovivoz', () => {
-
-  const _url = 'https://www.dev-rigla.ru/graphql';
   let quoteId = null;
-  let pvz_id = null;
+  let sku = 307;
 
-  beforeEach(() => {
-    // cy.visit('https://dev-rigla.ru/product/86362', {auth: {
-    //   username: 'magento',
-    //   password: 'a1b2c3d4',
-    // }})
-  })
+  beforeEach(() => {})
 
   it('Создание корзины гостя', () => {
     cy.request({
       method: 'POST',
-      url: 'https://dev-rigla.ru/rest/V1/guest-carts',
+      url: Cypress.env('baseUrl') + 'rest/V1/guest-carts',
     }).then(request => {
       quoteId = request.body
       cy.log('данные', request.body)
@@ -31,31 +20,17 @@ describe('Checkout Samovivoz', () => {
   it('Добавление товара в корзину', () => {
     cy.request({
       method: 'POST',
-      url: 'https://dev-rigla.ru/rest/V1/guest-carts/' + quoteId + '/items',
+      url: Cypress.env('baseUrl') + 'rest/V1/guest-carts/' + quoteId + '/items',
       body: {
-        cartItem: {quote_id: quoteId, sku: "307", qty: 1},
+        cartItem: {quote_id: quoteId, sku: sku, qty: 1},
       },
-    })
-  })
-
-  it('Получаем адреса в соответствии с текущим сгенерированным идентификатором пользователя', () => {
-    cy.request({
-      method: 'POST',
-      url: _url,
-      body: {
-        variables: variablesPvzQuoteByTypeStockAvailable,
-        query: queryPvzQuoteByTypeStockAvailable
-      },
-    }).then(request => {
-      pvz_id = request.body.data.pvzQuoteByTypeStockAvailable.inStockPvz[0].entity_id;
-      cy.log('данные', request.body)
     })
   })
 
   it('Метод доставки', () => {
     cy.request({
       method: 'PUT',
-      url: 'https://www.dev-rigla.ru/rest/V1/myshipping/updateCartZone/' + quoteId,
+      url: Cypress.env('baseUrl') + 'rest/V1/myshipping/updateCartZone/' + quoteId,
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer tcf5k9a8u7gfyr22c28qu29qq4qhxbu6",
@@ -70,7 +45,7 @@ describe('Checkout Samovivoz', () => {
   it('Рассчет заказа', () => {
     cy.request({
       method: 'POST',
-      url: 'https://dev-rigla.ru/rest/V1/cart/'+ quoteId +'/calculate-checkout',
+      url: Cypress.env('baseUrl') + 'rest/V1/cart/'+ quoteId +'/calculate-checkout',
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer tcf5k9a8u7gfyr22c28qu29qq4qhxbu6",
@@ -93,7 +68,7 @@ describe('Checkout Samovivoz', () => {
   it('Размещение заказа', () => {
     cy.request({
       method: 'PUT',
-        url: 'https://dev-rigla.ru/rest/V1/cart/' + quoteId + '/place-order',
+        url: Cypress.env('baseUrl') + 'rest/V1/cart/' + quoteId + '/place-order',
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer tcf5k9a8u7gfyr22c28qu29qq4qhxbu6"
